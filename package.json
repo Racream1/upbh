@@ -1,0 +1,8 @@
+{
+  "name": "upbh-extraction",
+  "version": "1.0.0",
+  "description": "Testes de extração",
+  "scripts": {
+    "test": "node tests/extraction.test.js"
+  }
+}
