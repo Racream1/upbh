@@ -213,7 +213,7 @@ window.copiarParaExcel = function() {
     if (pdfResults.length === 0) return;
     let resultado = pdfResults[activeTab].resultado;
     // Copia apenas valores (segunda coluna), separados por tab e nova linha
-    let texto = Object.values(resultado).join('\t');
+    let texto = Object.values(resultado).join('\n');
     navigator.clipboard.writeText(texto)
       .then(()=>{actions.innerHTML = '<span style="color:green;">Copiado! Agora cole no Excel.</span>'; setTimeout(renderActivePDF, 1000);})
       .catch(()=>{actions.innerHTML = '<span style="color:red;">Erro ao copiar!</span>';});
