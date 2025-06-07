@@ -1,311 +1,323 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>LabCopy – Extração Exata (L03.pdf)</title>
+  <title>Extração Balanço Hídrico PDF</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 30px;
-      background: #f5f5f5;
+    body { font-family: Arial, sans-serif; margin: 40px; background: #f7fafc; }
+    .container { display: flex; max-width: 1100px; margin: 0 auto; }
+    .sidebar {
+      width: 220px;
+      background: #f1f3f6;
+      border-radius: 8px 0 0 8px;
+      box-shadow: 0 2px 8px #0001;
+      padding: 18px 8px 18px 18px;
+      min-height: 540px;
+      margin-right: 0px;
+      height: fit-content;
     }
-    .upload-box {
-      max-width: 600px;
-      margin: 0 auto 20px auto;
-      padding: 20px;
+    .sidebar h3 { font-size: 18px; margin-bottom: 10px; }
+    .sidebar .tab-list { list-style: none; margin: 0; padding: 0; }
+    .sidebar .tab-list li {
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      background: #e9ecef;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-size: 15px;
+      text-align: left;
+      word-break: break-all;
+    }
+    .sidebar .tab-list li.active {
+      background: #4CAF50; color: #fff;
+    }
+    .main {
+      flex: 1;
       background: #fff;
+      border-radius: 0 8px 8px 0;
+      box-shadow: 0 2px 8px #0001;
+      padding: 25px;
+      min-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 540px;
+      justify-content: flex-start;
+    }
+    .upload-area {
       border: 2px dashed #4CAF50;
       border-radius: 8px;
+      background: #f6fff6;
       text-align: center;
+      padding: 28px;
       cursor: pointer;
-      transition: background 0.3s, border-color 0.3s;
-    }
-    .upload-box:hover {
-      background: #f0fff0;
-      border-color: #45a049;
-    }
-    #fileInput {
-      display: none;
-    }
-    #mensagem {
-      max-width: 600px;
-      margin: 20px auto;
-      padding: 15px;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      font-size: 1em;
-      color: #333;
-      min-height: 2em;
-      text-align: center;
-    }
-    #resultado table {
       width: 100%;
-      max-width: 600px;
-      margin: 20px auto;
+      max-width: 500px;
+      margin: 0 auto 16px auto;
+    }
+    .upload-area:hover { background: #e8ffe8; }
+    input[type="file"] { display: none; }
+    .center-table-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+    table {
       border-collapse: collapse;
+      margin: 0 auto 0 auto;
+      width: 100%;
+      max-width: 520px;
       background: #fff;
     }
-    #resultado th,
-    #resultado td {
-      border: 1px solid #ccc;
-      padding: 8px;
+    th, td {
+      border: 1px solid #bbb;
+      padding: 7px 10px;
       text-align: left;
+      font-size: 16px;
     }
-    #resultado th {
+    th {
       background: #e9ecef;
+      font-weight: bold;
+    }
+    #msg { margin: 14px 0 10px 0; color: #666; text-align: center; width: 100%; }
+    .actions { margin: 12px 0 10px 0; text-align: right; width: 100%; max-width: 520px;}
+    .copy-btn { padding: 7px 16px; background: #4caf50; color: #fff; border: none; border-radius: 5px; cursor: pointer;}
+    .copy-btn:active { background: #39853d;}
+    code { font-size: 11px;}
+    @media (max-width: 900px) {
+      .container { flex-direction: column; }
+      .sidebar, .main { border-radius: 8px; }
+      .main { min-width: unset; }
+      .sidebar { width: 100%; min-height: unset; margin-bottom: 18px;}
     }
   </style>
-  <!-- PDF.js via CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 </head>
 <body>
-
-  <div class="upload-box" id="uploadLabel">
-    <p>📄 Clique ou arraste o PDF aqui para extrair os campos exatos:</p>
-    <ul style="list-style: none; padding: 0 0 0 20px;">
-      <li>• Ganhos (mL) = último valor após “<strong>Total de Ganhos (mL)</strong>”</li>
-      <li>• Diurese (mL) = último valor após “<strong>Diurese (Volume/ml)</strong>”</li>
-      <li>• Perdas (mL) = último valor após “<strong>Total de Perdas (mL)</strong>”</li>
-      <li>• Hemodialise = último valor após “<strong>Hemodialise</strong>” (se vier “–”, devolve “–”)</li>
-      <li>• Balanço Hídrico (mL) = último valor após “<strong>Evolução (Ganhos-Perdas)</strong>”</li>
-      <li>• HGT (Maior/Menor) (mg/dL) = menor/maior de todos os valores após “<strong>Glicemia - MG/DL</strong>”</li>
-      <li>• Temperatura (°C) = menor/maior de todos os valores após “<strong>Temperatura - °C</strong>”</li>
-    </ul>
+<div class="container">
+  <div class="sidebar">
+    <h3>Arquivos PDF</h3>
+    <ul class="tab-list" id="pdfTabs"></ul>
   </div>
+  <div class="main">
+    <h2>Extração Balanço Hídrico - PDF UTI</h2>
+    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+      <b>Clique ou arraste até 10 PDFs aqui</b>
+      <br><span style="font-size:28px;">📄</span>
+      <input type="file" id="fileInput" accept="application/pdf" multiple>
+    </div>
+    <div id="msg">Nenhum PDF carregado.</div>
+    <div class="center-table-container" id="centerTable">
+      <div id="saida"></div>
+      <div class="actions" id="actions"></div>
+    </div>
+    <div style="margin-top:20px;"><code>Arraste os PDFs direto do SoulMV exportados (balanço hídrico completo).</code></div>
+  </div>
+</div>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-  <input type="file" id="fileInput" accept=".pdf">
-  <div id="mensagem">Nenhum PDF carregado.</div>
-  <div id="resultado"></div>
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const msg = document.getElementById('msg');
+const saida = document.getElementById('saida');
+const pdfTabs = document.getElementById('pdfTabs');
+const actions = document.getElementById('actions');
 
-  <script>
-    // 1) Configura o worker do PDF.js (via CDN)
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+let pdfResults = []; // {name, resultado, tabelaHTML}
+let activeTab = 0;
 
-    const uploadLabel = document.getElementById('uploadLabel');
-    const fileInput   = document.getElementById('fileInput');
-    const mensagemEl  = document.getElementById('mensagem');
-    const resultadoEl = document.getElementById('resultado');
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.style.background="#e8ffe8"; });
+uploadArea.addEventListener('dragleave', e => { e.preventDefault(); uploadArea.style.background="#f6fff6"; });
+uploadArea.addEventListener('drop', async e => {
+  e.preventDefault(); uploadArea.style.background="#f6fff6";
+  if (e.dataTransfer.files) {
+    await processMultiplePDFs(e.dataTransfer.files);
+  }
+});
+fileInput.addEventListener('change', async e => {
+  if (e.target.files) {
+    await processMultiplePDFs(e.target.files);
+  }
+});
 
-    uploadLabel.addEventListener('click', () => fileInput.click());
-    uploadLabel.addEventListener('dragover', e => {
-      e.preventDefault();
-      uploadLabel.style.borderColor = '#45a049';
+async function processMultiplePDFs(fileList) {
+  let files = Array.from(fileList).filter(f => f.type === "application/pdf").slice(0,10);
+  if (files.length === 0) { msg.innerText = "Nenhum PDF válido selecionado."; return; }
+  msg.innerText = "Lendo PDFs...";
+  pdfResults = [];
+  for (let file of files) {
+    const res = await lerPDF(file);
+    pdfResults.push({name: file.name, resultado: res.resultado, tabelaHTML: res.tabelaHTML});
+  }
+  // Ordena pdfResults por nome (alfanumérico, respeitando números)
+  pdfResults.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
+  activeTab = 0;
+  renderTabs();
+  renderActivePDF();
+}
+
+async function lerPDF(file) {
+  try {
+    const buffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+    let texto = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      texto += content.items.map(item => item.str).join('\n') + '\n';
+    }
+    const resultado = processBalanço(texto);
+    const tabelaHTML = gerarTabela(resultado);
+    return {resultado, tabelaHTML};
+  } catch (e) {
+    return {resultado: {"Erro": e.message}, tabelaHTML: `<div style="color:red;">Erro: ${e.message}</div>`};
+  }
+}
+
+function renderTabs() {
+  pdfTabs.innerHTML = "";
+  pdfResults.forEach((pdf, idx) => {
+    let li = document.createElement('li');
+    li.textContent = pdf.name;
+    li.className = (idx === activeTab) ? 'active' : '';
+    li.onclick = () => { activeTab = idx; renderActivePDF(); renderTabs(); };
+    pdfTabs.appendChild(li);
+  });
+}
+
+function renderActivePDF() {
+  if (pdfResults.length === 0) {
+    msg.innerText = "Nenhum PDF carregado.";
+    saida.innerHTML = "";
+    actions.innerHTML = "";
+    return;
+  }
+  msg.innerText = "PDF carregado: " + pdfResults[activeTab].name;
+  saida.innerHTML = pdfResults[activeTab].tabelaHTML;
+  actions.innerHTML = `<button class="copy-btn" onclick="copiarParaExcel()">Copiar Para Excel</button>`;
+}
+
+function gerarTabela(res) {
+    let html = '<table><thead><tr><th>Campo</th><th>Valor</th></tr></thead><tbody>';
+    Object.entries(res).forEach(([campo, valor]) => {
+      html += `<tr><td>${campo}</td><td>${valor}</td></tr>`;
     });
-    uploadLabel.addEventListener('dragleave', e => {
-      e.preventDefault();
-      uploadLabel.style.borderColor = '#4CAF50';
-    });
-    uploadLabel.addEventListener('drop', e => {
-      e.preventDefault();
-      uploadLabel.style.borderColor = '#4CAF50';
-      const file = e.dataTransfer.files[0];
-      if (file && file.type === 'application/pdf') {
-        processarPDF(file);
-      }
-    });
-    fileInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (file && file.type === 'application/pdf') {
-        processarPDF(file);
-      }
-    });
+    html += '</tbody></table>';
+    return html;
+}
 
-    // 2) Converte TODO o PDF em uma grande string
-    async function pdfToText(file) {
-      const buffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-      let texto = '';
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        texto += content.items.map(item => item.str).join('\n') + '\n';
-      }
-      return texto;
+window.copiarParaExcel = function() {
+    if (pdfResults.length === 0) return;
+    let resultado = pdfResults[activeTab].resultado;
+    // Copia apenas valores (segunda coluna), separados por tab e nova linha
+    let texto = Object.values(resultado).join('\t');
+    navigator.clipboard.writeText(texto)
+      .then(()=>{actions.innerHTML = '<span style="color:green;">Copiado! Agora cole no Excel.</span>'; setTimeout(renderActivePDF, 1000);})
+      .catch(()=>{actions.innerHTML = '<span style="color:red;">Erro ao copiar!</span>';});
+}
+
+function getAllNumbersAfterLabel(linhas, label, abs=false) {
+    let idx = -1;
+    for(let i=0; i<linhas.length; ++i) {
+        if(linhas[i].toUpperCase().includes(label.toUpperCase())) idx = i;
     }
-
-    // 3) Normaliza o texto removendo linhas vazias/extras
-    function normalizeText(raw) {
-      return raw
-        .replace(/\r\n/g, '\n')
-        .replace(/\r/g, '\n')
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0)
-        .join('\n');
-    }
-
-    // 4) Procura o ÚLTIMO número estritamente válido (ex: 306.0 ou 200 ou -50) após um rótulo
-    function ultimoNumeroAposRotulo(texto, rotulo) {
-      // Busca a posição onde “rotulo” (case-insensitive) aparece
-      const idx = texto.search(new RegExp(rotulo, 'i'));
-      if (idx === -1) return null;
-      // Pega tudo que vem depois do final do rótulo
-      const apos = texto.slice(idx + rotulo.length);
-      // Divide em tokens pelos espaços
-      const tokens = apos.split(/\s+/);
-      // Regex que aceita strings como “306.0”, “0.0”, “-200”, “3,5” e nada mais
-      const reNum = /^-?\d+([.,]\d+)?$/;
-      let ultimo = null;
-      for (const tok of tokens) {
-        if (reNum.test(tok)) {
-          // Converte “3,5” em 3.5 e armazena em “ultimo”
-          ultimo = parseFloat(tok.replace(',', '.'));
-        } else {
-          // Se o token não for esse formato de número, para de varrer
-          break;
+    if(idx == -1) return [];
+    let nums = [];
+    for(let i=idx+1; i<linhas.length; ++i) {
+        if(linhas[i].match(/^[A-Za-z]/) && !linhas[i].match(/^[+-]+$/)) break;
+        let vals = linhas[i].match(/-?\d+(\.\d+)?/g);
+        if(vals) {
+            vals.forEach(x=>{
+                let n = parseFloat(x.replace(',', '.'));
+                if(abs) n = Math.abs(n);
+                nums.push(n);
+            });
         }
-      }
-      return (ultimo !== null) ? ultimo : null;
     }
+    return nums;
+}
 
-    // 5) Captura MIN/MÁX de todos os valores imediatamente após um rótulo
-    function minMaxAposRotulo(texto, rotulo) {
-      const idx = texto.search(new RegExp(rotulo, 'i'));
-      if (idx === -1) return null;
-      const apos = texto.slice(idx + rotulo.length);
-      const tokens = apos.split(/\s+/);
-      const reNum = /^-?\d+([.,]\d+)?$/;
-      const numeros = [];
-      for (const tok of tokens) {
-        if (reNum.test(tok)) {
-          numeros.push(parseFloat(tok.replace(',', '.')));
-        } else {
-          break;
+function processBalanço(textoExtraido) {
+    const linhas = textoExtraido.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+
+    // --- GANHOS CORRETO ---
+    function getGanhosCorreto(linhas) {
+        let ganhos = [];
+        for(let i=0; i<linhas.length; ++i) {
+            if(linhas[i].toUpperCase().includes("TOTAL DE GANHOS (ML)")) {
+                for(let j=i+1; j<linhas.length; ++j) {
+                    if(
+                        linhas[j].toUpperCase().includes("TOTAL DE") ||
+                        linhas[j].toUpperCase().includes("PERDAS") ||
+                        linhas[j].match(/^\d{2}:\d{2}$/) ||
+                        linhas[j].toUpperCase().includes("EVOLUÇÃO") ||
+                        linhas[j].toUpperCase().includes("GANHOS")
+                    ) break;
+                    let found = linhas[j].match(/-?\d+(\.\d+)?/g);
+                    if(found) {
+                        for(let n of found) ganhos.push(parseFloat(n.replace(',','.')));
+                    }
+                }
+            }
         }
-      }
-      if (!numeros.length) return null;
-      return {
-        min: Math.min(...numeros),
-        max: Math.max(...numeros)
-      };
+        return ganhos.length ? ganhos[ganhos.length-1] : "-";
+    }
+    let ganhos = getGanhosCorreto(linhas);
+
+    // Temperatura: maior temperatura em "TEMPERATURA - °C"
+    let tempArr = getAllNumbersAfterLabel(linhas, "TEMPERATURA - °C");
+    let temp_afebril = "Afebril";
+    if (tempArr.length && tempArr.some(v => v >= 37.8)) {
+        temp_afebril = tempArr.filter(v => v >= 37.8).map(x => x.toFixed(1).replace('.',',') + "°C").join(', ');
     }
 
-    // 6) Funções específicas para cada campo:
-    function extrairGanhos(texto) {
-      // “Total de Ganhos (mL)” está no PDF. Pega o URLTIMO número dessa sequência.
-      const val = ultimoNumeroAposRotulo(texto, 'Total de Ganhos (mL)');
-      return (val !== null) ? val : '-';
-    }
-
-    function extrairPerdas(texto) {
-      let val = ultimoNumeroAposRotulo(texto, 'Total de Perdas (mL)');
-      if (val !== null && val > 0) {
-        // Se vier positivo, transformamos em negativo (volume de saída)
-        val = -val;
-      }
-      return (val !== null) ? val : '-';
-    }
-
-    function extrairDiurese(texto) {
-      // Primeiro tentamos “Diurese (Volume/ml)”
-      let val = ultimoNumeroAposRotulo(texto, 'Diurese (Volume/ml)');
-      if (val === null) {
-        // Se não achar, capturamos “Diurese <número>”
-        const m = texto.match(/Diurese\s+(-?\d+([.,]\d+)?)/i);
-        if (m) {
-          val = parseFloat(m[1].replace(',', '.'));
+    // Evacuação pastosa: conta quantos "+" após "EVACUAÇÃO PASTOSA"
+    let evacCount = 0;
+    {
+        const idx = linhas.findIndex(l => l.toUpperCase().includes("EVACUAÇÃO PASTOSA"));
+        if (idx >= 0) {
+            for (let i=idx+1; i<linhas.length; ++i) {
+                if (linhas[i].match(/^[A-Za-z]/)) break;
+                if (linhas[i].match(/^\+{1,2}$/)) evacCount++;
+            }
         }
-      }
-      // Diurese é saída de líquido, então deixamos negativo
-      if (val !== null && typeof val === 'number' && val > 0) {
-        val = -val;
-      }
-      return (val !== null) ? val : '-';
+    }
+    let evacuacao = evacCount ? `Pastosa ${evacCount}x` : "-";
+
+    // Perdas: último valor em "Total de Perdas (mL)"
+    let perdasArr = getAllNumbersAfterLabel(linhas, "Total de Perdas (mL)");
+    let perdas = perdasArr.length ? perdasArr[perdasArr.length-1] : "-";
+
+    // Balanço hídrico: último valor em "EVOLUÇÃO (Ganhos-Perdas)" OU "BALANÇO HÍDRICO"
+    let balancoArr = getAllNumbersAfterLabel(linhas, "EVOLUÇÃO (Ganhos-Perdas)");
+    let balanco = balancoArr.length ? balancoArr[balancoArr.length-1] : "-";
+    if (balanco === "-") {
+      let balanco2Arr = getAllNumbersAfterLabel(linhas, "BALANÇO HÍDRICO");
+      if (balanco2Arr.length) balanco = balanco2Arr[balanco2Arr.length-1];
     }
 
-    function extrairHemodialise(texto) {
-      // Captura “Hemodialise” e, a seguir, varre tokens até o primeiro que NÃO seja número.
-      const idx = texto.search(/Hemodialise/i);
-      if (idx === -1) return '-';
-      const apos = texto.slice(idx + 'Hemodialise'.length);
-      const tokens = apos.split(/\s+/);
-      const reNum = /^-?\d+([.,]\d+)?$/;
-      let ultimo = null;
-      for (const tok of tokens) {
-        if (reNum.test(tok)) {
-          ultimo = parseFloat(tok.replace(',', '.'));
-        } else {
-          break;
-        }
-      }
-      return (ultimo !== null) ? ultimo : '-';
+    // Glicemia: Maior, menor e lista se acima de 180
+    let glicemiasArr = getAllNumbersAfterLabel(linhas, "GLICEMIA - MG/DL");
+    let glicemia_str = "-";
+    if (glicemiasArr.length) {
+        let maior = Math.max(...glicemiasArr);
+        let menor = Math.min(...glicemiasArr);
+        let acima180 = glicemiasArr.filter(v => v > 180);
+        glicemia_str = `Maior: ${maior} | Menor: ${menor}` + (acima180.length ? ` (${acima180.join(', ')})` : "");
     }
 
-    function extrairBalanco(texto) {
-      // Pega o último valor após “Evolução (Ganhos-Perdas)”
-      const val = ultimoNumeroAposRotulo(texto, 'Evolução (Ganhos-Perdas)');
-      return (val !== null) ? val : '-';
+    return {
+        'Ganhos (mL)': ganhos,
+        'Perdas (mL)': perdas,
+        'EVACUAÇÃO': evacuacao,
+        'Balanço Hídrico (mL)': balanco,
+        'Temperatura (°C)': temp_afebril,
+        'Glicemia (mg/dL)': glicemia_str,
     }
-
-    function extrairHGT(texto) {
-      // Coleta todos os números após “Glicemia - MG/DL” e retorna “menor/maior”
-      const mm = minMaxAposRotulo(texto, 'Glicemia - MG/DL');
-      if (!mm) return '-';
-      return `${mm.min}/${mm.max}`;
-    }
-
-    function extrairTemperatura(texto) {
-      // Coleta todos os números após “Temperatura - °C” e retorna “menor/maior”
-      const mm = minMaxAposRotulo(texto, 'Temperatura - °C');
-      if (!mm) return '-';
-      return `${mm.min}/${mm.max}`;
-    }
-
-    // 7) Monta a tabela HTML com os sete campos
-    function exibirResultados(campos) {
-      const rows = [
-        ['Ganhos (mL)',                campos.Ganhos],
-        ['Diurese (mL)',              campos.Diurese],
-        ['Perdas (mL)',               campos.Perdas],
-        ['Hemodialise',               campos.Hemodialise],
-        ['HGT (Maior/Menor) (mg/dL)', campos.HGT],
-        ['Temperatura (°C)',          campos.Temperatura],
-        ['Balanço Hídrico (mL)',      campos['Balanço Hídrico']]
-      ];
-
-      let html = '<table><thead><tr><th>Campo</th><th>Valor</th></tr></thead><tbody>';
-      rows.forEach(([label, val]) => {
-        let exibir = '-';
-        if (typeof val === 'number') {
-          // Formata “1234” como “1 234” ou “1234,5” como “1 234,5”
-          exibir = val.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
-        } else if (typeof val === 'string') {
-          exibir = val;
-        }
-        html += `<tr><td>${label}</td><td>${exibir}</td></tr>`;
-      });
-      html += '</tbody></table>';
-      resultadoEl.innerHTML = html;
-    }
-
-    // 8) Função principal que lê o PDF e chama todos os extratores
-    async function processarPDF(file) {
-      mensagemEl.textContent = 'Lendo PDF... aguarde.';
-      resultadoEl.innerHTML = '';
-      try {
-        const bruto = await pdfToText(file);
-        const texto = normalizeText(bruto);
-
-        const campos = {
-          Ganhos:      extrairGanhos(texto),
-          Diurese:     extrairDiurese(texto),
-          Perdas:      extrairPerdas(texto),
-          Hemodialise: extrairHemodialise(texto),
-          HGT:         extrairHGT(texto),
-          Temperatura: extrairTemperatura(texto)
-        };
-        campos['Balanço Hídrico'] = extrairBalanco(texto);
-
-        exibirResultados(campos);
-        mensagemEl.textContent = 'Resultados extraídos:';
-      } catch (err) {
-        mensagemEl.textContent = 'Erro ao processar PDF: ' + err.message;
-      }
-    }
-  </script>
-
+}
+</script>
 </body>
 </html>
